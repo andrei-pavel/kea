@@ -14,7 +14,6 @@ install_kea() {
   export KEA_BUILD_DIR="${KEA_BUILD_DIR-/builds/isc-projects/kea}"
 
   cxxflags=
-  autoreconf -i
   if test "${SANITIZER}" = 'none'; then
     cxxflags="${cxxflags} -fno-sanitize=all"
     enable_fuzzing='--enable-fuzzing'
@@ -24,13 +23,13 @@ install_kea() {
   fi
   export CXXFLAGS="${cxxflags}"
   export LDFLAGS='-L/usr/lib/gcc/x86_64-linux-gnu/9 -lstdc++fs'
-  if ! ./configure --enable-boost-headers-only --prefix='/opt/kea' "${enable_fuzzing}" --with-gtest=/usr/src/googletest/googletest; then
-    printf './configure failed. Here is config.log:\n'
-    cat config.log
+  if ! meson setup build --prefix='/opt/kea' -D fuzz=enabled -D tests=enabled; then
+    printf 'meson setup failed. Here is meson-log.txt:\n'
+    cat build/meson-logs/meson-log.txt
     return 1
   fi
-  make -j "$(nproc)"
-  make install
+  meson compile -C build
+  meson install -C build
 
   # Copy internal libraries.
   # SC2156 (warning): Injecting filenames is fragile and insecure. Use parameters.
